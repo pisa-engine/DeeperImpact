@@ -4,6 +4,9 @@ import pickle
 from pathlib import Path
 from typing import Optional
 from typing import Union, Set
+from collections import defaultdict
+
+from datasets import load_dataset
 
 from torch.utils.data import Dataset
 from tqdm import tqdm
@@ -44,6 +47,19 @@ class Queries:
 
     def keys(self):
         return self.queries.keys()
+
+
+class HFQueries(Queries):
+    def __init__(self, queries_path: Union[str, Path], verbose: bool = False):
+        self.queries = self._load_queries(queries_path, verbose)
+
+    def _load_queries(self, path, verbose: bool = False):
+        queries = {}
+        dataset = load_dataset(str(path), name="queries", split="train")
+        for query in tqdm(dataset, desc="Loading queries", disable=not verbose):
+            queries[query['query_id']] = query['text']
+        return queries
+
 
 
 class Collection:
@@ -93,6 +109,17 @@ class Collection:
                 batch = []
         if len(batch) > 0:
             yield batch
+
+class HFCollection(Collection):
+    def __init__(self, collection_path: Union[str, Path], verbose: bool = False):
+        self.collection = self._load_collection(collection_path, verbose)
+
+    def _load_collection(self, path, verbose: bool = False):
+        dataset = load_dataset(str(path), name="documents", split="train")
+        collection = {}
+        for document in tqdm(dataset, desc="Loading collection", disable=not verbose):
+            collection[document['document_id']] = document['text']
+        return collection
 
 
 class MSMarcoTriples(Dataset):
@@ -230,9 +257,9 @@ class DistilHardNegatives(MSMarcoTriples):
         :return: The query, positive (relevant) doc and negative (non-relevant) doc, and their scores.
         """
         qid, pos_id, neg_id, pos_score, neg_score = self.triples[idx]
-        return self.queries[qid], self.collection[pos_id], self.collection[neg_id], pos_score, neg_score
-
-
+        return self.queries[qid], self.collection[pos_id], self.collection[neg_id], pos_score, neg_score       
+        
+           
 class DistillationScores:
     def __init__(self, scores_path: Union[str, Path], queries_path: Union[str, Path],
                  collection_path: Union[str, Path], batch_size: int = 55,
@@ -265,6 +292,7 @@ class DistillationScores:
                 docs = list(scores[qid].items())
                 for i in range(0, len(docs), self.batch_size):
                     if i + self.batch_size <= len(docs):
+                        print(docs[i:i + self.batch_size])
                         lookup.append((qid, docs[i:i + self.batch_size]))
                     else:
                         break
@@ -283,6 +311,35 @@ class DistillationScores:
         qid, pid_score_list = self.dataset[idx]
         return self.queries[qid], [(self.collection[pid], score) for pid, score in pid_score_list]
 
+class DistillationScoresGemma(DistillationScores):
+
+    def __init__(self, scores_path: Union[str, Path], queries_path: Union[str, Path],
+                 collection_path: Union[str, Path], batch_size: int = 55,
+                 qrels_path: Optional[Union[str, Path]] = None, verbose: bool = False):
+        self.batch_size = batch_size        
+        self.qrels = qrels_path and QueryRelevanceDataset(qrels_path)
+        self.queries = HFQueries(queries_path, verbose=verbose)
+        self.collection = HFCollection(collection_path, verbose=verbose)
+        scores = self._load_scores(scores_path, verbose)
+        self.dataset = self.construct_dataset(scores)
+        
+    @staticmethod
+    def _load_scores(path, verbose: bool = False):
+        dataset = load_dataset(str(path), name="train", split="train")
+        scores = defaultdict(dict)
+        for example in tqdm(dataset, desc="Loading scores", disable=not verbose):
+            document_ids = json.loads(example['document_ids'])
+            scores_values = json.loads(example['scores'])
+            scores[example['query_id']] = {doc_id: score for doc_id, score in zip(document_ids, scores_values, strict=True)}
+        return scores
+ 
+ 
+    def construct_dataset(self, scores):
+        lookup = []
+        for qid in scores:
+            docs = scores[qid].items()
+            lookup.append((qid, docs))
+        return lookup
 
 class RunFile:
     def __init__(self, run_file_path: Union[str, Path]):
@@ -366,3 +423,15 @@ class QueryParser:
     @staticmethod
     def parse(item, collection_type):
         return getattr(QueryParser, QueryParser._mapping[collection_type])(item)
+
+
+if __name__ == "__main__":
+    dataset = DistillationScoresGemma(
+        scores_path="lightonai/ms-marco-en-bge-gemma",
+        queries_path="lightonai/ms-marco-en-bge-gemma",
+        collection_path="lightonai/ms-marco-en-bge-gemma",
+        batch_size=55,
+        qrels_path=None,
+        verbose=True
+    )
+    print(len(dataset))

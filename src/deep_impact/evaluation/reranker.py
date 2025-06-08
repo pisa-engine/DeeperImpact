@@ -7,7 +7,7 @@ from torch.nn import DataParallel
 from tqdm.auto import tqdm
 
 from src.deep_impact.models import DeepImpact
-from src.utils.datasets import Collection, TopKRunFile, Queries, RunFile
+from src.utils.datasets_utils import Collection, TopKRunFile, Queries, RunFile
 
 
 class ReRanker:

@@ -4,7 +4,7 @@ from typing import Union
 
 from src.deep_impact.indexing import Indexer
 from src.deep_impact.models import DeepImpact, DeepPairwiseImpact
-from src.utils.datasets import CollectionParser
+from src.utils.datasets_utils import CollectionParser
 from src.utils.defaults import COLLECTION_PATH, DATA_DIR, CHECKPOINT_DIR, BATCH_SIZE, COLLECTION_TYPES
 from src.utils.logger import Logger
 

@@ -7,7 +7,7 @@ from tqdm.auto import tqdm
 
 from src.deep_impact.inverted_index import InvertedIndex
 from src.deep_impact.models import DeepImpact, DeepPairwiseImpact
-from src.utils.datasets import QueryRelevanceDataset, Queries, RunFile
+from src.utils.datasets_utils import QueryRelevanceDataset, Queries, RunFile
 from src.utils.defaults import COLLECTION_TYPES
 
 

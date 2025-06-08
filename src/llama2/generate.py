@@ -8,7 +8,7 @@ from peft import PeftModel, PeftConfig
 from tqdm import tqdm
 from transformers import LlamaForCausalLM, LlamaTokenizer, BitsAndBytesConfig, T5ForConditionalGeneration, T5Tokenizer
 
-from src.utils.datasets import CollectionParser
+from src.utils.datasets_utils import CollectionParser
 from src.utils.defaults import (
     DEVICE,
     COLLECTION_TYPES,

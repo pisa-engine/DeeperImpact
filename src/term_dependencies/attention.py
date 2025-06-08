@@ -7,7 +7,7 @@ import torch
 from tqdm import tqdm
 from transformers import BertTokenizer, BertModel
 
-from src.utils.datasets import Collection
+from src.utils.datasets_utils import Collection
 from src.utils.defaults import DATA_DIR, DEVICE
 
 

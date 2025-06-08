@@ -6,7 +6,7 @@ from pathlib import Path
 
 from tqdm import tqdm
 
-from src.utils.datasets import QueryRelevanceDataset
+from src.utils.datasets_utils import QueryRelevanceDataset
 from src.utils.defaults import DEEP_IMPACT_DIR
 
 

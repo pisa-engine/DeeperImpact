@@ -93,6 +93,7 @@ class Trainer:
             for i, batch in enumerate(self.train_data):
                 with torch.cuda.amp.autocast():
                     outputs = self.get_output_scores(batch)
+                    # print(outputs)
                     loss = self.evaluate_loss(outputs, batch)
 
                     loss /= self.gradient_accumulation_steps
@@ -109,7 +110,7 @@ class Trainer:
                     self.optimizer.zero_grad()
 
                 if self.gpu_id == 0:
-                    if i % self.eval_every == 0 and self.evaluator is not None:
+                    if i % self.eval_every == 0 and self.evaluator is not None and i > 0:
                         self.logger.info(f"Evaluating NanoBEIR at iteration {i}")
                         metrics = self.evaluator.evaluate_all(self.model.module)
                         self.logger.info(f"Metrics: {metrics}")

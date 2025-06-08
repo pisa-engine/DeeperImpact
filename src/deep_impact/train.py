@@ -10,7 +10,7 @@ from src.deep_impact.models import DeepImpact, DeepPairwiseImpact, DeepImpactCro
 from src.deep_impact.training import Trainer, PairwiseTrainer, CrossEncoderTrainer, DistilTrainer, \
     InBatchNegativesTrainer
 from src.deep_impact.training.distil_trainer import DistilMarginMSE, DistilKLLoss
-from src.utils.datasets import MSMarcoTriples, DistillationScores
+from src.utils.datasets_utils import MSMarcoTriples, DistillationScores, DistillationScoresGemma
 from src.deep_impact.evaluation.nano_beir_evaluator import NanoBEIREvaluator
 
 
@@ -130,7 +130,10 @@ def run(
         trainer_cls = DistilTrainer
         trainer_cls.loss = DistilKLLoss()
         collate_function = partial(distil_collate_fn, max_length=max_length)
-        dataset_cls = DistillationScores
+        if "lightonai/ms-marco-en-bge-gemma" in str(dataset_path):
+            dataset_cls = partial(DistillationScoresGemma, verbose=True)
+        else:
+            dataset_cls = DistillationScores
 
     if in_batch_negatives:
         trainer_cls = InBatchNegativesTrainer

@@ -4,7 +4,7 @@ from typing import List, Union
 
 from tqdm.auto import tqdm
 
-from src.utils.datasets import QueryRelevanceDataset, TopKDataset, RunFile
+from src.utils.datasets_utils import QueryRelevanceDataset, TopKDataset, RunFile
 from src.utils.logger import Logger
 
 logger = Logger('metrics')

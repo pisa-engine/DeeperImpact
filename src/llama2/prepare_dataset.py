@@ -4,7 +4,7 @@ from typing import Union
 
 from tqdm import tqdm
 
-from src.utils.datasets import Queries, Collection, QueryRelevanceDataset
+from src.utils.datasets_utils import Queries, Collection, QueryRelevanceDataset
 from src.utils.defaults import DEEP_IMPACT_DIR
 
 

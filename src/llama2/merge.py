@@ -4,7 +4,7 @@ from pathlib import Path
 
 from tqdm import tqdm
 
-from src.utils.datasets import CollectionParser
+from src.utils.datasets_utils import CollectionParser
 from src.utils.defaults import COLLECTION_TYPES
 from src.utils.utils import merge
 
