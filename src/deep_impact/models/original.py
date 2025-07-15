@@ -8,6 +8,7 @@ import tokenizers
 import torch
 import torch.nn as nn
 from transformers import BertPreTrainedModel, BertModel
+from transformers.modeling_outputs import BaseModelOutputWithPoolingAndCrossAttentions
 from nltk.stem import PorterStemmer
 
 from src.utils.checkpoint import ModelCheckpoint
@@ -44,6 +45,8 @@ class DeepImpact(BertPreTrainedModel):
         :return: Batch of impact scores
         """
         bert_output = self._get_bert_output(input_ids, attention_mask, token_type_ids)
+        # Dummy assert to satisfy type checker.
+        assert bert_output.last_hidden_state is not None
         return self._get_term_impact_scores(bert_output.last_hidden_state)
 
     def _get_bert_output(
@@ -52,7 +55,7 @@ class DeepImpact(BertPreTrainedModel):
             attention_mask: torch.Tensor,
             token_type_ids: torch.Tensor,
             output_attentions: Optional[bool] = None,
-    ) -> torch.Tensor:
+    ) -> BaseModelOutputWithPoolingAndCrossAttentions:
         """
         :param input_ids: Batch of input ids
         :param attention_mask: Batch of attention masks
@@ -79,7 +82,7 @@ class DeepImpact(BertPreTrainedModel):
 
     @classmethod
     def process_query_and_document(cls, query: str, document: str, max_length: Optional[int] = None) -> \
-            Tuple[torch.Tensor, torch.Tensor]:
+            Tuple[tokenizers.Encoding, torch.Tensor]:
         """
         Process query and document to feed to the model
         :param query: Query string
