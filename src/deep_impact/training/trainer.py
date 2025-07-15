@@ -12,7 +12,11 @@ import json
 
 from src.utils.checkpoint import ModelCheckpoint
 from src.utils.logger import Logger
+from src.deep_impact.models import DeepImpact, DeepPairwiseImpact, DeepImpactCrossEncoder
 from src.deep_impact.evaluation.nano_beir_evaluator import BaseEvaluator
+
+
+Model = Union[DeepImpact, DeepPairwiseImpact, DeepImpactCrossEncoder]
 
 
 class Trainer:
@@ -20,7 +24,7 @@ class Trainer:
 
     def __init__(
             self,
-            model: torch.nn.Module,
+            model: Model,
             optimizer: torch.optim.Optimizer,
             train_data: DataLoader,
             checkpoint_dir: Union[str, Path],
@@ -61,7 +65,7 @@ class Trainer:
                 self.checkpoint_callback.step = (self.checkpoint_callback.step * self.checkpoint_callback.batch_size) \
                                                 // (self.batch_size * self.n_ranks)
             else:
-                self.logger.info(f"Assuming previous training was done on same number of GPUs & batch size.")
+                self.logger.info("Assuming previous training was done on same number of GPUs & batch size.")
         else:
             self.checkpoint_callback = ModelCheckpoint(
                 model=self.model,
@@ -148,12 +152,14 @@ class Trainer:
 
     def get_output_scores(self, batch, step):
         input_ids, attention_mask, type_ids = self.get_input_tensors(batch['encoded_list'])
-        document_term_scores = self.model(input_ids, attention_mask, type_ids)
+        document_term_scores = self.model._get_bert_output(input_ids, attention_mask, type_ids).last_hidden_state
 
         masks = batch['masks'].to(self.gpu_id)
         if self.use_wandb:
             wandb.log({"avg_matches": (masks != 0).float().mean().item()}, step=step)
-        return (masks * document_term_scores).sum(dim=1).squeeze(-1).view(self.batch_size, -1)
+
+        o = (masks * document_term_scores).sum(dim=1)
+        return self.model.impact_score_encoder(o).reshape(self.batch_size, -1)
 
     def evaluate_loss(self, outputs, batch):
         labels = torch.zeros(self.batch_size, dtype=torch.long).to(self.gpu_id)
